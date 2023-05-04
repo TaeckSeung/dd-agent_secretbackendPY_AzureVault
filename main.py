@@ -3,6 +3,7 @@ import logging
 import os
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
+from azure.core.exceptions import ResourceNotFoundError
 
 # 1. setup the vault and secret information
 vault_url = "https://XXXXX.vault.azure.net/"
@@ -10,8 +11,7 @@ vault_url = "https://XXXXX.vault.azure.net/"
 secret_list = ["secret_1","secret_2"]
 
 # 2. Setup the Azure Crediential type for using the SDK.
-
-# [ClientSecretCredential ]
+# [ClientSecretCredential]
 #   General Application token base login method for using API.
 #   1. Utilize AzureAD application to get access to AzureAPI without login via Azure CLI
 
@@ -22,7 +22,7 @@ secret_list = ["secret_1","secret_2"]
 # DefaultAzureCredential
 #   credential = DefaultAzureCredential()
 
-# 1. ClientSecretCredentail
+# [ClientSecretCredentail]
 tenant_id="XXXXXX"
 client_id="XXXXXXX"
 client_secret="XXXXXXX"
@@ -31,15 +31,14 @@ credential = ClientSecretCredential(tenant_id=tenant_id, client_id=client_id, cl
 # 3. Generate client with crediential to use API
 client = SecretClient(vault_url=vault_url, credential=credential)
 
-# 4. Get secret from Azure Vault
-secret = client.get_secret(secret_name)
-
-# 5. Process secret value to the JSON format compatible with Datadog-agent.
+# 4. Process secret value to the JSON format compatible with Datadog-agent.
+# Use to store secret values.
+secret_output = {}
 for secret_name in secret_list:
     try:
         secret = client.get_secret(secret_name)
     except ResourceNotFoundError as e:
-        secret_output[secret_name] = {"value": "", "error": str(e)}
+        secret_output[secret_name] = {"value": "", "error": e.message}
     else:
         secret_output[secret_name] = {"value": secret.value}
 
